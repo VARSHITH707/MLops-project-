@@ -1,0 +1,126 @@
+schema: '2.0'
+stages:
+  generate:
+    cmd: python -m src.data.generate_data
+    deps:
+    - path: src/data/generate_data.py
+      hash: md5
+      md5: 6cb20eaf3f00561af539d8c3754fd974
+      size: 5293
+    params:
+      params.yaml:
+        data.n_machines: 50
+        data.n_samples: 8000
+        data.seed: 42
+        data.start_time: '2026-01-01T00:00:00'
+    outs:
+    - path: data/raw/sensors.csv
+      hash: md5
+      md5: 148d52ead9a5faa919b7a8d3a5b526b2
+      size: 581718
+  validate:
+    cmd: python -m src.data.validate_data
+    deps:
+    - path: data/raw/sensors.csv
+      hash: md5
+      md5: 148d52ead9a5faa919b7a8d3a5b526b2
+      size: 581718
+    - path: src/data/validate_data.py
+      hash: md5
+      md5: 0c43d904e75d8c3acbc775ab7d5b95bf
+      size: 4498
+    outs:
+    - path: reports/data_validation.json
+      hash: md5
+      md5: 4e902b4b6dfe303e38408eb47b4ad467
+      size: 55
+  prepare:
+    cmd: python -m src.features.build_features
+    deps:
+    - path: data/raw/sensors.csv
+      hash: md5
+      md5: 148d52ead9a5faa919b7a8d3a5b526b2
+      size: 581718
+    - path: reports/data_validation.json
+      hash: md5
+      md5: 4e902b4b6dfe303e38408eb47b4ad467
+      size: 55
+    - path: src/data/validate_data.py
+      hash: md5
+      md5: 0c43d904e75d8c3acbc775ab7d5b95bf
+      size: 4498
+    - path: src/features/build_features.py
+      hash: md5
+      md5: 9bdd76bee2c4faacd897072b35d01a0c
+      size: 3380
+    params:
+      params.yaml:
+        data.seed: 42
+        data.test_size: 0.2
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 9fc0ebfa388410ada5f7f750c0168f49
+      size: 116556
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 959437d1eff64b8f63ba08f711e5d292
+      size: 465332
+  train:
+    cmd: python scripts/train_model.py --promote
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: 9fc0ebfa388410ada5f7f750c0168f49
+      size: 116556
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 959437d1eff64b8f63ba08f711e5d292
+      size: 465332
+    - path: scripts/train_model.py
+      hash: md5
+      md5: 6f37955e17780aba4d2237df28823b8b
+      size: 2484
+    - path: src/features/build_features.py
+      hash: md5
+      md5: 9bdd76bee2c4faacd897072b35d01a0c
+      size: 3380
+    - path: src/models/evaluate.py
+      hash: md5
+      md5: ccfc7bd8847ed18000222d45d6666a95
+      size: 1672
+    - path: src/models/train.py
+      hash: md5
+      md5: 7bc773284e6bc4739aa39cc77893f131
+      size: 6935
+    params:
+      params.yaml:
+        train:
+          seed: 42
+          threshold: 0.35
+          selection_metric: f1
+          logistic_regression:
+            C: 1.0
+            max_iter: 1000
+          random_forest:
+            n_estimators: 200
+            max_depth: 10
+            min_samples_leaf: 5
+    outs:
+    - path: artifacts/current.json
+      hash: md5
+      md5: 4282a6b226c6ee27d408773a21fa80e6
+      size: 631
+    - path: artifacts/models
+      hash: md5
+      md5: ec7daeab0d7d2a541393580e3d59de8c.dir
+      size: 21486553
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: 555d2a5702e1befc63b71d407a8a9198
+      size: 262
+    - path: reports/training_report.json
+      hash: md5
+      md5: a3be958a52657f9cccb2c548e7e67bbb
+      size: 2635

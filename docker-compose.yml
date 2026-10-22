@@ -1,0 +1,76 @@
+# docker compose up --build
+#   init      -> one-shot: generates data and trains the first model if none exists
+#   api       -> http://localhost:8000/docs
+#   dashboard -> http://localhost:8501
+#   mlflow    -> http://localhost:5000
+x-common: &common
+  build: .
+  image: predictive-maintenance-mlops:latest
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - pm-data:/app/data
+    - pm-artifacts:/app/artifacts
+    - pm-logs:/app/logs
+    - pm-reports:/app/reports
+    - pm-mlruns:/app/mlruns
+
+services:
+  init:
+    <<: *common
+    command: ["python", "scripts/setup.py"]
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  api:
+    <<: *common
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  dashboard:
+    <<: *common
+    command: ["python", "-m", "streamlit", "run", "app/dashboard.py", "--server.port", "8501",
+              "--server.address", "0.0.0.0", "--server.headless", "true"]
+    environment:
+      API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mlflow:
+    <<: *common
+    command: ["mlflow", "ui", "--backend-store-uri", "sqlite:////app/mlruns/mlflow.db",
+              "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pm-data:
+  pm-artifacts:
+  pm-logs:
+  pm-reports:
+  pm-mlruns:

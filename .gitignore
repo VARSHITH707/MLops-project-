@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Data, models and run outputs (tracked/produced by DVC, MLflow or at runtime)
+/data/raw/*.csv
+/data/processed/*.csv
+/artifacts/*
+!/artifacts/.gitkeep
+/logs/*
+!/logs/.gitkeep
+/reports/*
+!/reports/.gitkeep
+/mlruns/
+mlartifacts/
+
+# Secrets
+.env
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.coverage
+.claude/

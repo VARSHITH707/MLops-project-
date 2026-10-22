@@ -1,0 +1,60 @@
+stages:
+  generate:
+    cmd: python -m src.data.generate_data
+    deps:
+      - src/data/generate_data.py
+    params:
+      - data.n_samples
+      - data.n_machines
+      - data.seed
+      - data.start_time
+    outs:
+      - data/raw/sensors.csv
+
+  validate:
+    cmd: python -m src.data.validate_data
+    deps:
+      - src/data/validate_data.py
+      - data/raw/sensors.csv
+    outs:
+      - reports/data_validation.json:
+          cache: false
+
+  prepare:
+    cmd: python -m src.features.build_features
+    deps:
+      - src/features/build_features.py
+      - src/data/validate_data.py
+      - data/raw/sensors.csv
+      - reports/data_validation.json
+    params:
+      - data.test_size
+      - data.seed
+    outs:
+      - data/processed/train.csv
+      - data/processed/test.csv
+
+  train:
+    cmd: python scripts/train_model.py --promote
+    deps:
+      - scripts/train_model.py
+      - src/models/train.py
+      - src/models/evaluate.py
+      - src/features/build_features.py
+      - data/processed/train.csv
+      - data/processed/test.csv
+    params:
+      - train
+    outs:
+      # persist: retraining adds versions here; `dvc repro` must not wipe them.
+      - artifacts/models:
+          persist: true
+          cache: false
+      - artifacts/current.json:
+          persist: true
+          cache: false
+      - reports/training_report.json:
+          cache: false
+    metrics:
+      - reports/metrics.json:
+          cache: false

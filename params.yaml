@@ -1,0 +1,42 @@
+# Single source of configuration for the pipeline, API and retraining.
+# DVC tracks this file: changing a value makes `dvc repro` rerun the affected stages.
+
+data:
+  n_samples: 8000          # total synthetic sensor readings
+  n_machines: 50           # readings are spread across this many machines
+  seed: 42                 # same seed -> identical dataset
+  horizon_hours: 24        # target = "machine fails within the next 24 operating hours"
+  test_size: 0.2           # share of rows held out for evaluation
+  start_time: "2026-01-01T00:00:00"
+
+train:
+  seed: 42
+  threshold: 0.35          # probability >= threshold -> predicted failure (favours recall)
+  selection_metric: f1     # metric used to choose between the two model types
+  logistic_regression:
+    C: 1.0
+    max_iter: 1000
+  random_forest:
+    n_estimators: 200
+    max_depth: 10
+    min_samples_leaf: 5
+
+risk:
+  medium: 0.2              # low < 0.2 <= medium < threshold <= high
+
+monitoring:
+  drift_min_samples: 50    # fewer logged predictions -> drift status "insufficient_data"
+  psi_bins: 10
+  psi_warn: 0.1            # PSI 0.1-0.25 -> moderate drift
+  psi_alert: 0.25          # PSI >= 0.25 -> significant drift
+  performance_min_labels: 30
+
+retraining:
+  min_new_labels: 200      # condition trigger: this many new labelled outcomes since last run
+  degradation_f1_drop: 0.10  # condition trigger: live F1 this far below training F1
+  new_data_eval_share: 0.3 # share of new labelled rows added to the shared evaluation set
+  min_f1: 0.50             # candidate must reach at least this F1
+  min_f1_gain: 0.0         # candidate F1 must be >= current F1 + this
+  max_recall_drop: 0.02    # candidate recall may not fall more than this below current
+  lock_timeout_seconds: 1800
+  scheduler_interval_seconds: 300
