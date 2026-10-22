@@ -10,9 +10,9 @@ jobs:
     env:
       MLFLOW_DISABLE_AGENT_HINT: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build image
         run: docker build -t predictive-maintenance-mlops:ci .
       - name: Train inside the container and check the API health endpoint

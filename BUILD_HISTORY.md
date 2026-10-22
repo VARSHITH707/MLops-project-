@@ -92,6 +92,11 @@ This file is the running record of how the project was built. New timeline entri
 - Final `ruff check .` → pass; `pytest -q` → 52 passed.
 - Next: commit and push to GitHub, then check the Actions run.
 
+### 2026-10-23 02:11–02:15 IST — Push and CI
+- `git commit` (dba891a) and `git push -u origin main` → OK.
+- GitHub Actions run 39850819908 → **success** (test 1m2s, docker 1m19s). Evidence is in the test log (section F).
+- Annotation: actions/checkout@v4 and setup-python@v5 target the deprecated Node 20 → bumped to checkout@v5 and setup-python@v6. Updated the README's Docker verification note.
+
 ## E. Implementation Status
 
 | Component | Status |
@@ -105,14 +110,14 @@ This file is the running record of how the project was built. New timeline entri
 | DVC | VERIFIED (local cache only; no remote configured) |
 | FastAPI | VERIFIED |
 | Streamlit | VERIFIED |
-| Docker | IMPLEMENTED — not run locally (Docker not installed); CI `docker` job builds + health-checks it |
+| Docker | VERIFIED for the image (CI: build → train in container → /health ok). `docker compose up` not run (Docker not installed locally) |
 | Monitoring | VERIFIED |
 | Drift detection | VERIFIED |
 | Retraining | VERIFIED |
 | Model promotion | VERIFIED |
 | Rollback | VERIFIED |
 | Tests | VERIFIED (52 passed) |
-| CI | IMPLEMENTED — YAML validated locally; remote result: see GitHub Actions after push |
+| CI | VERIFIED (GitHub Actions run 39850819908: test ✓ 1m2s, docker ✓ 1m19s) |
 | Cloud guide | IMPLEMENTED (documentation only, nothing deployed) |
 | Professor guide | IMPLEMENTED (steps exercised live during smoke tests) |
 
@@ -138,6 +143,7 @@ This file is the running record of how the project was built. New timeline entri
 | 10-23 02:08 | `dvc repro` after adding validation report as prepare dep | PASS | linear DAG generate→validate→prepare→train; same metrics |
 | 10-23 02:09 | `setup.py`, `setup.py` again, `setup.py --force` (temp PM_HOME) | PASS | trains; skips when model exists; rebuilds + promotes |
 | 10-23 02:09 | `yaml.safe_load` of docker-compose.yml and ci.yml | PASS | services init/api/dashboard/mlflow; jobs test/docker |
+| 10-23 02:12 | `git push -u origin main` → GitHub Actions run 39850819908 | PASS | `test` job: ruff "All checks passed!", "52 passed in 9.83s", mini pipeline outputs present; `docker` job: image built, model trained in container (RF F1 0.690, AUC 0.935, identical to Windows), `/health` → `model_loaded: true` |
 
 ## G. Problems and Resolutions
 
@@ -155,7 +161,9 @@ This file is the running record of how the project was built. New timeline entri
 
 **Verified by actually running:** data generation (reproducible), validation (every rule by tests), feature engineering, training and selection, evaluation metrics, artifact and metadata saving, MLflow logging + UI, DVC pipeline + lock + metrics, FastAPI (all endpoints via tests; core endpoints via curl against real Uvicorn), Streamlit (AppTest + manual browser run), SQLite logging, PSI drift, live performance, retraining lock, promotion, rejection, failed-validation path, crash path, rollback, single-instance scheduler, `check_system.py`, `run_demo.py`.
 
-**Not verified locally:** `docker build` / `docker compose up`, because Docker is not installed on this machine. The `docker` job in `.github/workflows/ci.yml` builds the image, trains inside it and checks `/health`. Its result is visible in GitHub Actions after the push.
+**Verified remotely (GitHub Actions run 39850819908):** lint, all 52 tests on Linux, the mini pipeline, Docker image build, training inside the container and the API health check.
+
+**Not verified:** `docker compose up` with all four services together (init → api → dashboard → mlflow, volumes, health-check ordering), because Docker is not installed on this machine. The single-container path is verified by CI; the Compose file is YAML-validated only.
 
 **Not verified at all:** cloud deployment (documentation only, by design: no cloud resources were created). Scheduler timing over real minutes (only its single-instance guard and trigger logic are tested; the loop body is exercised through `check_triggers` + `start`).
 
@@ -164,5 +172,5 @@ This file is the running record of how the project was built. New timeline entri
 - **State:** all phases complete; code, tests and docs are committed on `main` and pushed to `VARSHITH707/MLops-project-`.
 - **Resume:** `cd Z:\MLOPS\predictive-maintenance-mlops; .\.venv\Scripts\Activate.ps1; python scripts/check_system.py; python -m pytest -q`
 - **Last completed phase:** 16 (final verification report).
-- **Next action:** check the GitHub Actions run (the `docker` job is the first real Docker verification); rehearse PROFESSOR_DEMO.md.
+- **Next action:** rehearse PROFESSOR_DEMO.md; optionally install Docker Desktop and run `docker compose up --build` to verify the full Compose stack.
 - **Known blockers:** Docker unavailable locally. No DVC remote / remote MLflow configured (local only, as documented).

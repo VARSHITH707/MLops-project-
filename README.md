@@ -350,7 +350,7 @@ The `init` service generates data and trains the first model, if none exists, be
 
 Data, models, logs, reports and MLflow runs are kept in named Docker volumes, so they survive restarts. Stop with `Ctrl + C`, or run `docker compose down`. Add `-v` to also delete the volumes.
 
-> **Verification status:** Docker is not installed on the machine this project was built on, so `docker compose up` has **not** been run locally. The GitHub Actions `docker` job builds the image, trains inside the container and checks `/health`. Check the latest Actions run for its result.
+> **Verification status:** Docker isn't installed on the machine this project was built on, so `docker compose up` (all four services together) has **not** been run locally. The image itself **is verified**: the GitHub Actions `docker` job ([run 39850819908](https://github.com/VARSHITH707/MLops-project-/actions/runs/39850819908)) built it, trained the model inside the container (same metrics: F1 0.690, ROC-AUC 0.935) and got `{"status":"ok","model_loaded":true}` from `/health`.
 
 ## 15. Continuous integration (GitHub Actions)
 
